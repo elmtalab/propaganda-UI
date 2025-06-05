@@ -36,3 +36,5 @@ shows the JSON payload that can be posted to a backend of your choice.
 The worker exposes a simple HTML form at the root path. Fill in the group ID, sender ID, message content and the ISO timestamp for when the message should be sent. The form submission stores the request in KV. A scheduled event runs every minute to check for pending messages and sends them to `https://propaganda-production.up.railway.app/api/send/`.
 
 For advanced usage, navigate to `/advanced`. This page lets you build a JSON payload using a dynamic form where you can add multiple groups, conversations and messages with individual `send_at` timestamps. Submitting the form stores the messages in KV. The cron job later reads the stored tasks and dispatches them to the API when the scheduled time arrives.
+
+For a guided setup experience, visit `/wizard`. This multi-step form walks through each field and posts the assembled JSON to `/advanced` when finished.
