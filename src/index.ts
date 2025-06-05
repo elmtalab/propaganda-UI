@@ -40,6 +40,30 @@ const API_URL = 'https://propaganda-production.up.railway.app/api/send/'
 // Create a minimal Hono application to handle HTTP routes
 const app = new Hono<{ Bindings: Env }>()
 
+// Template JSON shown in the advanced form for convenience
+const DEFAULT_JSON = `{
+  "system_metadata": {
+    "version": "1.0.1",
+    "generated_at": "2025-06-05T01:45:00Z",
+    "timezone": "UTC",
+    "description": "Ledger of AI-only outbound interactions inside Telegram groups"
+  },
+  "groups": [
+    {
+      "group_id": "-1001876543210",
+      "group_name": "Crypto Talk 🔥",
+      "privacy_level": "public",
+      "created_at": "2024-12-01T18:09:55Z",
+      "created_by": 123456789,
+      "group_description": "Daily chat about BTC, ETH, and alt-coins.",
+      "members": [],
+      "conversations": []
+    }
+  ],
+  "ai_users": [],
+  "audit_log": []
+}`
+
 app.get('/', c => {
   // Simple form UI to schedule a message
 
@@ -97,6 +121,39 @@ app.post('/schedule', async c => {
   const id = crypto.randomUUID()
   await c.env.SCHEDULE_KV.put(`task:${id}`, JSON.stringify(task))
   return c.json({ status: 'scheduled', id })
+})
+
+// Display a textarea that lets a user craft the full JSON payload
+app.get('/advanced', c => {
+  const html = `<!DOCTYPE html>
+  <html>
+  <body>
+    <h1>Send Custom JSON</h1>
+    <form method="POST" action="/advanced">
+      <textarea name="payload" rows="30" cols="80">${DEFAULT_JSON}</textarea><br/>
+      <button type="submit">Send</button>
+    </form>
+  </body>
+  </html>`
+  return c.html(html)
+})
+
+// Accept the JSON entered on the advanced form and relay it to the API
+app.post('/advanced', async c => {
+  const body = await c.req.parseBody()
+  const payload = body["payload"]?.toString() || ''
+  if (!payload) return c.json({ error: 'Missing payload' }, 400)
+  try {
+    JSON.parse(payload)
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400)
+  }
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload
+  })
+  return c.json({ status: 'sent' })
 })
 
 // Export the app to let Wrangler handle requests
