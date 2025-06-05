@@ -42,3 +42,5 @@ For a guided setup experience, visit `/wizard`. This multi-step form walks throu
 ### Telegram-style Scheduler
 
 Navigate to `/chat` for a Telegram-style interface powered by **react-chat-elements**. Enter a group ID and sender name, type your message and optionally pick a time. Messages appear in a scrolling chat window and can be scheduled in bulk with **Schedule All** which posts them to `/advanced`.
+
+Visit `/chatpage` for a multi-group view rendered with **ChatList** from **react-chat-elements**. The page lists a few sample chats similar to Telegram.
