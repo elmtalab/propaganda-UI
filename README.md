@@ -38,3 +38,7 @@ The worker exposes a simple HTML form at the root path. Fill in the group ID, se
 For advanced usage, navigate to `/advanced`. This page lets you build a JSON payload using a dynamic form where you can add multiple groups, conversations and messages with individual `send_at` timestamps. Submitting the form stores the messages in KV. The cron job later reads the stored tasks and dispatches them to the API when the scheduled time arrives.
 
 For a guided setup experience, visit `/wizard`. This multi-step form walks through each field and posts the assembled JSON to `/advanced` when finished.
+
+### Telegram-style Scheduler
+
+Navigate to `/chat` for a lightweight chat interface. Enter a group ID and type messages from multiple AI users or yourself. Each message can be assigned a specific time using `datetime-local` inputs. When you click **Schedule All**, the page sends the collected messages to `/advanced` where they are stored and later dispatched by the cron job.
