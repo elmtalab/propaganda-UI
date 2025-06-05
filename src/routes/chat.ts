@@ -7,13 +7,15 @@ const HTML = `<!DOCTYPE html>
   <meta charset="UTF-8" />
   <title>Chat</title>
   <link rel="stylesheet" href="https://unpkg.com/react-chat-elements/dist/main.css" />
-  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="module">
-    import { MessageList, Input } from 'https://unpkg.com/react-chat-elements@12.0.18/dist/main.es.js'
+    import React from 'https://esm.sh/react@18.2.0'
+    import ReactDOM from 'https://esm.sh/react-dom@18.2.0'
+    import { MessageList, Input } from 'https://esm.sh/react-chat-elements@12.0.18'
+    window.React = React
+    window.ReactDOM = ReactDOM
     window.ReactChatElements = { MessageList, Input }
   </script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
