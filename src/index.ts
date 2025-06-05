@@ -132,7 +132,8 @@ const WIZARD_HTML = `<!DOCTYPE html>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { Stepper, Step, StepLabel, Button, TextField, Container, Box } = MaterialUI;
+    const { Stepper, Step, StepLabel, Button, TextField, Container, Box, CssBaseline } = MaterialUI;
+    const useMediaQuery = MaterialUI.useMediaQuery;
 
     function App() {
       const steps = ['System Metadata', 'Group Info', 'Conversation', 'Message', 'AI User', 'Audit Log', 'Summary'];
@@ -145,6 +146,7 @@ const WIZARD_HTML = `<!DOCTYPE html>
         ai_user: { user_id: '', user_name: '', role: '', status: '', max_messages_per_hour: '' },
         audit_log: { event_id: '', event_type: '', actor_id: '', target_id: '', timestamp: '' }
       });
+      const isMobile = useMediaQuery('(max-width:600px)');
 
       const handleChange = (path) => (e) => {
         const keys = path.split('.');
@@ -162,59 +164,59 @@ const WIZARD_HTML = `<!DOCTYPE html>
 
       const renderSystem = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <TextField label="Version" value={data.system_metadata.version} onChange={handleChange('system_metadata.version')} />
-          <TextField label="Generated At" placeholder="2025-06-05T01:45:00Z" value={data.system_metadata.generated_at} onChange={handleChange('system_metadata.generated_at')} />
-          <TextField label="Timezone" value={data.system_metadata.timezone} onChange={handleChange('system_metadata.timezone')} />
-          <TextField label="Description" value={data.system_metadata.description} onChange={handleChange('system_metadata.description')} />
+          <TextField fullWidth label="Version" value={data.system_metadata.version} onChange={handleChange('system_metadata.version')} />
+          <TextField fullWidth label="Generated At" placeholder="2025-06-05T01:45:00Z" value={data.system_metadata.generated_at} onChange={handleChange('system_metadata.generated_at')} />
+          <TextField fullWidth label="Timezone" value={data.system_metadata.timezone} onChange={handleChange('system_metadata.timezone')} />
+          <TextField fullWidth label="Description" value={data.system_metadata.description} onChange={handleChange('system_metadata.description')} />
         </Box>
       );
 
       const renderGroup = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <TextField label="Group ID" value={data.group.group_id} onChange={handleChange('group.group_id')} />
-          <TextField label="Group Name" value={data.group.group_name} onChange={handleChange('group.group_name')} />
-          <TextField label="Privacy Level" value={data.group.privacy_level} onChange={handleChange('group.privacy_level')} />
-          <TextField label="Created At" placeholder="2024-12-01T18:09:55Z" value={data.group.created_at} onChange={handleChange('group.created_at')} />
-          <TextField label="Created By" value={data.group.created_by} onChange={handleChange('group.created_by')} />
-          <TextField label="Group Description" value={data.group.group_description} onChange={handleChange('group.group_description')} />
+          <TextField fullWidth label="Group ID" value={data.group.group_id} onChange={handleChange('group.group_id')} />
+          <TextField fullWidth label="Group Name" value={data.group.group_name} onChange={handleChange('group.group_name')} />
+          <TextField fullWidth label="Privacy Level" value={data.group.privacy_level} onChange={handleChange('group.privacy_level')} />
+          <TextField fullWidth label="Created At" placeholder="2024-12-01T18:09:55Z" value={data.group.created_at} onChange={handleChange('group.created_at')} />
+          <TextField fullWidth label="Created By" value={data.group.created_by} onChange={handleChange('group.created_by')} />
+          <TextField fullWidth label="Group Description" value={data.group.group_description} onChange={handleChange('group.group_description')} />
         </Box>
       );
 
       const renderConversation = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <TextField label="Conversation ID" value={data.conversation.conversation_id} onChange={handleChange('conversation.conversation_id')} />
-          <TextField label="Start Time" placeholder="2025-06-04T22:17:12Z" value={data.conversation.start_time} onChange={handleChange('conversation.start_time')} />
-          <TextField label="Initiated By" value={data.conversation.initiated_by} onChange={handleChange('conversation.initiated_by')} />
-          <TextField label="Topic" value={data.conversation.topic} onChange={handleChange('conversation.topic')} />
+          <TextField fullWidth label="Conversation ID" value={data.conversation.conversation_id} onChange={handleChange('conversation.conversation_id')} />
+          <TextField fullWidth label="Start Time" placeholder="2025-06-04T22:17:12Z" value={data.conversation.start_time} onChange={handleChange('conversation.start_time')} />
+          <TextField fullWidth label="Initiated By" value={data.conversation.initiated_by} onChange={handleChange('conversation.initiated_by')} />
+          <TextField fullWidth label="Topic" value={data.conversation.topic} onChange={handleChange('conversation.topic')} />
         </Box>
       );
 
       const renderMessage = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <TextField label="Message ID" value={data.message.message_id} onChange={handleChange('message.message_id')} />
-          <TextField label="Sender ID" value={data.message.sender_id} onChange={handleChange('message.sender_id')} />
-          <TextField label="Content" value={data.message.message_content} onChange={handleChange('message.message_content')} />
-          <TextField label="Timestamp" placeholder="2025-06-04T22:20:00Z" value={data.message.timestamp} onChange={handleChange('message.timestamp')} />
+          <TextField fullWidth label="Message ID" value={data.message.message_id} onChange={handleChange('message.message_id')} />
+          <TextField fullWidth label="Sender ID" value={data.message.sender_id} onChange={handleChange('message.sender_id')} />
+          <TextField fullWidth label="Content" value={data.message.message_content} onChange={handleChange('message.message_content')} />
+          <TextField fullWidth label="Timestamp" placeholder="2025-06-04T22:20:00Z" value={data.message.timestamp} onChange={handleChange('message.timestamp')} />
         </Box>
       );
 
       const renderAIUser = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <TextField label="User ID" value={data.ai_user.user_id} onChange={handleChange('ai_user.user_id')} />
-          <TextField label="User Name" value={data.ai_user.user_name} onChange={handleChange('ai_user.user_name')} />
-          <TextField label="Role" value={data.ai_user.role} onChange={handleChange('ai_user.role')} />
-          <TextField label="Status" value={data.ai_user.status} onChange={handleChange('ai_user.status')} />
-          <TextField label="Max Msgs/Hour" value={data.ai_user.max_messages_per_hour} onChange={handleChange('ai_user.max_messages_per_hour')} />
+          <TextField fullWidth label="User ID" value={data.ai_user.user_id} onChange={handleChange('ai_user.user_id')} />
+          <TextField fullWidth label="User Name" value={data.ai_user.user_name} onChange={handleChange('ai_user.user_name')} />
+          <TextField fullWidth label="Role" value={data.ai_user.role} onChange={handleChange('ai_user.role')} />
+          <TextField fullWidth label="Status" value={data.ai_user.status} onChange={handleChange('ai_user.status')} />
+          <TextField fullWidth label="Max Msgs/Hour" value={data.ai_user.max_messages_per_hour} onChange={handleChange('ai_user.max_messages_per_hour')} />
         </Box>
       );
 
       const renderAudit = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <TextField label="Event ID" value={data.audit_log.event_id} onChange={handleChange('audit_log.event_id')} />
-          <TextField label="Event Type" value={data.audit_log.event_type} onChange={handleChange('audit_log.event_type')} />
-          <TextField label="Actor ID" value={data.audit_log.actor_id} onChange={handleChange('audit_log.actor_id')} />
-          <TextField label="Target ID" value={data.audit_log.target_id} onChange={handleChange('audit_log.target_id')} />
-          <TextField label="Timestamp" placeholder="2025-06-04T22:16:54Z" value={data.audit_log.timestamp} onChange={handleChange('audit_log.timestamp')} />
+          <TextField fullWidth label="Event ID" value={data.audit_log.event_id} onChange={handleChange('audit_log.event_id')} />
+          <TextField fullWidth label="Event Type" value={data.audit_log.event_type} onChange={handleChange('audit_log.event_type')} />
+          <TextField fullWidth label="Actor ID" value={data.audit_log.actor_id} onChange={handleChange('audit_log.actor_id')} />
+          <TextField fullWidth label="Target ID" value={data.audit_log.target_id} onChange={handleChange('audit_log.target_id')} />
+          <TextField fullWidth label="Timestamp" placeholder="2025-06-04T22:16:54Z" value={data.audit_log.timestamp} onChange={handleChange('audit_log.timestamp')} />
         </Box>
       );
 
@@ -248,9 +250,10 @@ const WIZARD_HTML = `<!DOCTYPE html>
 
       return (
         <Container maxWidth="sm">
-          <Stepper activeStep={activeStep} sx={{ mt: 2 }}>
-            {steps.map(label => (
-              <Step key={label}>
+          <CssBaseline />
+          <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} sx={{ mt: 2 }}>
+            {steps.map((label, idx) => (
+              <Step key={label} sx={{ display: idx === activeStep ? 'flex' : 'none' }}>
                 <StepLabel>{label}</StepLabel>
               </Step>
             ))}
