@@ -41,8 +41,8 @@ PREFIX = "PROP_"
 API_BASE = "https://api.cloudflare.com/client/v4"
 
 # TODO: replace these placeholders with your actual Cloudflare credentials
-CF_ACCOUNT_ID = "2c2c7353c68ec11cb139c38961121776"
-CF_API_TOKEN = "hy-stGfTgkFFnk7ThNWI_-PuOa262R_GkthqzOke"
+CF_ACCOUNT_ID = ###
+CF_API_TOKEN = ###
 
 WRANGLER_TOML = Path(__file__).resolve().parents[1] / "wrangler.toml"
 
