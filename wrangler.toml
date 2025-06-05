@@ -1,0 +1,17 @@
+name = "propaganda-worker"
+main = "src/index.ts"
+compatibility_date = "2024-05-14"
+
+kv_namespaces = [
+  { binding = "SCHEDULE_KV", id = "SCHEDULE_KV" },
+  { binding = "SYSTEM_META_KV", id = "SYSTEM_META_KV" },
+  { binding = "GROUP_KV", id = "GROUP_KV" },
+  { binding = "GROUP_MEMBERS_KV", id = "GROUP_MEMBERS_KV" },
+  { binding = "CONVERSATION_KV", id = "CONVERSATION_KV" },
+  { binding = "MESSAGE_KV", id = "MESSAGE_KV" },
+  { binding = "AI_USER_KV", id = "AI_USER_KV" },
+  { binding = "AUDIT_LOG_KV", id = "AUDIT_LOG_KV" }
+]
+
+[triggers]
+crons = ["*/1 * * * *"]
