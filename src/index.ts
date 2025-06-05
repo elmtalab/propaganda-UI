@@ -3,6 +3,7 @@ import type { Env } from './types'
 import registerRoot from './routes/root'
 import registerWizard from './routes/wizard'
 import registerChat from './routes/chat'
+import registerChatId from './routes/chat_id'
 import registerChatPage from './routes/chatpage'
 import registerSchedule from './routes/schedule'
 import registerAdvanced from './routes/advanced'
@@ -15,6 +16,7 @@ const app = new Hono<{ Bindings: Env }>()
 registerRoot(app)
 registerWizard(app)
 registerChat(app)
+registerChatId(app)
 registerChatPage(app)
 registerSchedule(app)
 registerAdvanced(app)
