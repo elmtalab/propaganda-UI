@@ -16,6 +16,7 @@ const HTML = `<!DOCTYPE html>
     window.ReactChatElements = { MessageList, Input }
   </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
     .chat-window { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; }
