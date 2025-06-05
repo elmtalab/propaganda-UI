@@ -33,6 +33,17 @@ interface SchedulePayload {
   // Unix timestamp (milliseconds) when the message should be sent
   send_at: number
 }
+interface AdvancedMessageTask {
+  group_id: string
+  conversation_id?: string
+  message: {
+    sender_id: string
+    message_content: string
+    reply_to?: string
+  }
+  send_at: number
+}
+
 
 // Endpoint that ultimately receives the scheduled messages
 const API_URL = 'https://propaganda-production.up.railway.app/api/send/'
@@ -57,7 +68,17 @@ const DEFAULT_JSON = `{
       "created_by": 123456789,
       "group_description": "Daily chat about BTC, ETH, and alt-coins.",
       "members": [],
-      "conversations": []
+      "conversations": [
+        {
+          "messages": [
+            {
+              "sender_id": "123456789",
+              "message_content": "Hello world",
+              "send_at": "2025-06-05T13:00:00Z"
+            }
+          ]
+        }
+      ]
     }
   ],
   "ai_users": [],
@@ -138,22 +159,49 @@ app.get('/advanced', c => {
   return c.html(html)
 })
 
-// Accept the JSON entered on the advanced form and relay it to the API
+// Accept the JSON entered on the advanced form and store each message as a task
 app.post('/advanced', async c => {
   const body = await c.req.parseBody()
-  const payload = body["payload"]?.toString() || ''
-  if (!payload) return c.json({ error: 'Missing payload' }, 400)
+  const payloadStr = body["payload"]?.toString() || ''
+  if (!payloadStr) return c.json({ error: 'Missing payload' }, 400)
+  let payload: any
   try {
-    JSON.parse(payload)
+    payload = JSON.parse(payloadStr)
   } catch {
     return c.json({ error: 'Invalid JSON' }, 400)
   }
-  await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload
-  })
-  return c.json({ status: 'sent' })
+
+  if (!Array.isArray(payload.groups)) {
+    return c.json({ error: 'Payload missing groups array' }, 400)
+  }
+
+  const ids: string[] = []
+  for (const group of payload.groups) {
+    if (!group.group_id || !Array.isArray(group.conversations)) continue
+    for (const conv of group.conversations) {
+      const convId = conv.conversation_id || crypto.randomUUID()
+      if (!Array.isArray(conv.messages)) continue
+      for (const msg of conv.messages) {
+        const ts = Date.parse(msg.send_at || msg.timestamp || '')
+        if (!msg.sender_id || !msg.message_content || isNaN(ts)) continue
+        const task: AdvancedMessageTask = {
+          group_id: group.group_id,
+          conversation_id: convId,
+          message: {
+            sender_id: msg.sender_id,
+            message_content: msg.message_content,
+            reply_to: msg.reply_to
+          },
+          send_at: ts
+        }
+        const id = crypto.randomUUID()
+        await c.env.SCHEDULE_KV.put(`task:${id}`, JSON.stringify(task))
+        ids.push(id)
+      }
+    }
+  }
+
+  return c.json({ status: 'scheduled', ids })
 })
 
 // Export the app to let Wrangler handle requests
@@ -166,19 +214,37 @@ export const scheduled = async (event: ScheduledController, env: Env, ctx: Execu
 
   const list = await env.SCHEDULE_KV.list({ prefix: 'task:' })
   for (const key of list.keys) {
-    const task = await env.SCHEDULE_KV.get(key.name, { type: 'json' }) as SchedulePayload | null
-    if (!task) continue
-    // Send tasks whose time has arrived
+    const data = await env.SCHEDULE_KV.get(key.name, { type: 'json' }) as any
+    if (!data) continue
 
-    if (task.send_at <= now) {
+    const send = async (groups: any) => {
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groups: task.groups })
+        body: JSON.stringify({ groups })
       })
-      // Remove the task once sent
-
       await env.SCHEDULE_KV.delete(key.name)
+    }
+
+    if ('groups' in data) {
+      const task = data as SchedulePayload
+      if (task.send_at <= now) {
+        await send(task.groups)
+      }
+    } else if ('group_id' in data && 'message' in data) {
+      const task = data as AdvancedMessageTask
+      if (task.send_at <= now) {
+        await send([
+          {
+            group_id: task.group_id,
+            conversations: [
+              {
+                messages: [task.message]
+              }
+            ]
+          }
+        ])
+      }
     }
   }
 }
