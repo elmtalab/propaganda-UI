@@ -44,12 +44,39 @@ interface AdvancedMessageTask {
   send_at: number
 }
 
+interface LoggedMessage {
+  group_id: string
+  conversation_id?: string
+  sender_id: string
+  message_content: string
+  timestamp: number
+  scheduled_for?: number
+  reply_to?: string
+}
 
 // Endpoint that ultimately receives the scheduled messages
 const API_URL = 'https://propaganda-production.up.railway.app/api/send/'
 
 // Create a minimal Hono application to handle HTTP routes
 const app = new Hono<{ Bindings: Env }>()
+const logMessages = async (groups: any[], scheduled: number, env: Env) => {
+  for (const g of groups) {
+    for (const conv of g.conversations || []) {
+      for (const msg of conv.messages || []) {
+        const entry: LoggedMessage = {
+          group_id: g.group_id,
+          conversation_id: conv.conversation_id,
+          sender_id: msg.sender_id,
+          message_content: msg.message_content,
+          timestamp: Date.now(),
+          scheduled_for: scheduled,
+          reply_to: msg.reply_to
+        };
+        await env.MESSAGE_KV.put(`message:${g.group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
+      }
+    }
+  }
+};
 
 // Template JSON shown in the advanced form for convenience
 const DEFAULT_JSON = `{
@@ -274,6 +301,118 @@ const WIZARD_HTML = `<!DOCTYPE html>
 </body>
 </html>`
 
+const CHAT_HTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .chat-window { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; }
+    .message { margin: 5px 0; }
+    .ai { background: #e9f5ff; padding: 5px 10px; border-radius: 4px; display: inline-block; }
+    .user { background: #dcf8c6; padding: 5px 10px; border-radius: 4px; display: inline-block; float: right; }
+  </style>
+</head>
+<body>
+  <h1>Telegram Chat Demo</h1>
+  <label>Group ID <input id="group-id" /></label><br/>
+  <label>Number of AI <input type="number" id="ai-count" value="1" min="1" /></label>
+  <div id="ai-container"></div>
+  <div class="chat-window" id="chat"></div>
+  <div id="reply-indicator" style="display:none;margin:5px 0;">
+    Replying...
+    <button id="cancel-reply" type="button">Cancel</button>
+  </div>
+  <input id="user-msg" placeholder="Your message"/>
+  <input id="user-time" type="datetime-local"/>
+  <button id="send">Add</button>
+  <button id="schedule-all">Schedule All</button>
+  <script>
+    function updateAI() {
+      const count = parseInt(document.getElementById('ai-count').value);
+      const container = document.getElementById('ai-container');
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const div = document.createElement('div');
+        div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"> at <input type="datetime-local" class="ai-time" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
+        container.appendChild(div);
+      }
+    }
+    const messages = [];
+    let currentReplyTo = null;
+    const replyIndicator = document.getElementById('reply-indicator');
+    document.getElementById('cancel-reply').onclick = () => {
+      currentReplyTo = null;
+      replyIndicator.style.display = 'none';
+    };
+    function addMessage(text, cls, sender, time, replyTo) {
+      const id = messages.length;
+      const el = document.createElement('div');
+      el.className = 'message ' + cls;
+      el.dataset.id = id;
+      let inner = '[' + (new Date(time)).toLocaleString() + '] ' + sender + ': ' + text;
+      if (replyTo !== null) inner += ' \u21a9 #' + replyTo; // ↩ symbol
+      inner += ' <button class="reply-button" data-id="' + id + '">Reply</button>';
+      el.innerHTML = inner;
+      document.getElementById('chat').appendChild(el);
+      document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+      messages.push({ id, sender_id: sender, message_content: text, send_at: time, reply_to: replyTo });
+    }
+    document.getElementById('ai-count').onchange = updateAI;
+    updateAI();
+    document.getElementById('chat').addEventListener('click', e => {
+      if (e.target.classList.contains('reply-button')) {
+        currentReplyTo = e.target.dataset.id;
+        replyIndicator.style.display = 'block';
+        replyIndicator.textContent = 'Replying to #' + currentReplyTo;
+      }
+    });
+    document.getElementById('ai-container').addEventListener('click', e => {
+      if (e.target.classList.contains('add-ai-msg')) {
+        const input = e.target.parentElement.querySelector('.ai-msg');
+        const timeEl = e.target.parentElement.querySelector('.ai-time');
+        const time = timeEl.value ? new Date(timeEl.value).toISOString() : new Date().toISOString();
+        addMessage(input.value, 'ai', 'ai_' + input.dataset.index, time, currentReplyTo);
+        fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'ai_' + input.dataset.index, message_content: input.value, send_at: time, reply_to: currentReplyTo || '' }) });
+        currentReplyTo = null;
+        replyIndicator.style.display = 'none';
+        input.value = '';
+        timeEl.value = '';
+      }
+    });
+    document.getElementById('send').onclick = () => {
+      const msg = document.getElementById('user-msg').value;
+      const time = document.getElementById('user-time').value ? new Date(document.getElementById('user-time').value).toISOString() : new Date().toISOString();
+      addMessage(msg, 'user', 'user', time, currentReplyTo);
+      fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg, send_at: time, reply_to: currentReplyTo || '' }) });
+      currentReplyTo = null;
+      replyIndicator.style.display = 'none';
+      document.getElementById('user-msg').value = '';
+      document.getElementById('user-time').value = '';
+    };
+    document.getElementById('schedule-all').onclick = () => {
+      const groupId = document.getElementById('group-id').value;
+      const cleaned = messages.map(m => {
+        const o = { sender_id: m.sender_id, message_content: m.message_content, send_at: m.send_at };
+        if (m.reply_to !== null && m.reply_to !== undefined && m.reply_to !== '') o.reply_to = m.reply_to;
+        return o;
+      });
+      const payload = {
+        groups: [
+          {
+            group_id: groupId,
+            conversations: [ { messages: cleaned } ]
+          }
+        ]
+      };
+      fetch('/advanced', { method: 'POST', body: new URLSearchParams({ payload: JSON.stringify(payload) }) })
+        .then(r => r.json())
+        .then(r => alert('Scheduled ' + (r.ids ? r.ids.length : 0) + ' messages'));
+    };
+  </script>
+</body>
+</html>`
 app.get('/', c => {
   // Simple form UI to schedule a message
 
@@ -296,6 +435,9 @@ app.get('/', c => {
 // Multi-step wizard that posts JSON to /advanced
 app.get('/wizard', c => {
   return c.html(WIZARD_HTML)
+})
+app.get('/chat', c => {
+  return c.html(CHAT_HTML)
 })
 
 app.post('/schedule', async c => {
@@ -499,6 +641,31 @@ app.post('/advanced', async c => {
   return c.json({ status: 'scheduled', ids })
 })
 
+app.post('/log', async c => {
+  const body = await c.req.parseBody();
+  const group_id = body['group_id']?.toString() || '';
+  const sender_id = body['sender_id']?.toString() || '';
+  const content = body['message_content']?.toString() || '';
+  const send_at = Date.parse(body['send_at']?.toString() || '');
+  const reply_to = body['reply_to']?.toString() || '';
+  if (!group_id || !sender_id || !content) return c.json({ error: 'Invalid input' }, 400);
+  const entry: LoggedMessage = { group_id, sender_id, message_content: content, timestamp: Date.now() };
+  if (!isNaN(send_at)) entry.scheduled_for = send_at;
+  if (reply_to) entry.reply_to = reply_to;
+  await c.env.MESSAGE_KV.put(`message:${group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
+  return c.json({ status: 'logged' });
+})
+
+app.get('/history/:group', async c => {
+  const group = c.req.param('group');
+  const list = await c.env.MESSAGE_KV.list({ prefix: `message:${group}:` });
+  const messages = [] as any[];
+  for (const k of list.keys) {
+    const m = await c.env.MESSAGE_KV.get(k.name, { type: 'json' });
+    if (m) messages.push(m);
+  }
+  return c.json({ group, messages });
+})
 // Export the app to let Wrangler handle requests
 export default app
 
@@ -512,19 +679,20 @@ export const scheduled = async (event: ScheduledController, env: Env, ctx: Execu
     const data = await env.SCHEDULE_KV.get(key.name, { type: 'json' }) as any
     if (!data) continue
 
-    const send = async (groups: any) => {
+    const send = async (groups: any, scheduledFor: number) => {
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groups })
       })
+      await logMessages(groups, scheduledFor, env)
       await env.SCHEDULE_KV.delete(key.name)
     }
 
     if ('groups' in data) {
       const task = data as SchedulePayload
       if (task.send_at <= now) {
-        await send(task.groups)
+        await send(task.groups, task.send_at)
       }
     } else if ('group_id' in data && 'message' in data) {
       const task = data as AdvancedMessageTask
@@ -538,7 +706,7 @@ export const scheduled = async (event: ScheduledController, env: Env, ctx: Execu
               }
             ]
           }
-        ])
+        ], task.send_at)
       }
     }
   }
