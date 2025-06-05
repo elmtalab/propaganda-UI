@@ -252,8 +252,9 @@ const WIZARD_HTML = `<!DOCTYPE html>
         <Container maxWidth="sm">
           <CssBaseline />
           <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} sx={{ mt: 2 }}>
-            {steps.map(label => (
-              <Step key={label}>
+           {steps.map((label, idx) => (
+              <Step key={label} sx={{ display: idx === activeStep ? 'flex' : 'none' }}>
+
                 <StepLabel>{label}</StepLabel>
               </Step>
             ))}
