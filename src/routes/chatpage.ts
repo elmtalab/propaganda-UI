@@ -34,10 +34,12 @@ const HTML = `<!DOCTYPE html>
   </script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
+
   </style>
 </head>
 <body>
   <div id="root"></div>
+
 </body>
 </html>`
 
