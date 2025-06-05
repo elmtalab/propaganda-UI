@@ -149,11 +149,110 @@ app.get('/advanced', c => {
   const html = `<!DOCTYPE html>
   <html>
   <body>
-    <h1>Send Custom JSON</h1>
-    <form method="POST" action="/advanced">
-      <textarea name="payload" rows="30" cols="80">${DEFAULT_JSON}</textarea><br/>
+    <h1>Advanced Scheduler</h1>
+    <h2>System Metadata</h2>
+    <label>Version <input id="sys-version"/></label><br/>
+    <label>Generated At <input id="sys-generated-at" placeholder="2025-06-05T01:45:00Z"/></label><br/>
+    <label>Timezone <input id="sys-timezone" value="UTC"/></label><br/>
+    <label>Description <input id="sys-description"/></label>
+
+    <h2>Groups</h2>
+    <div id="groups"></div>
+    <button type="button" id="addGroup">Add Group</button>
+
+    <form method="POST" action="/advanced" style="margin-top:20px;">
+      <input type="hidden" name="payload" id="payload" />
       <button type="submit">Send</button>
     </form>
+
+    <pre id="preview"></pre>
+
+    <script>
+      const groupsEl = document.getElementById('groups');
+      document.getElementById('addGroup').onclick = () => addGroup();
+
+      function addGroup() {
+        const g = document.createElement('div');
+        g.className = 'group';
+        g.innerHTML = \`
+          <hr/>
+          <label>Group ID <input class="group-id"/></label>
+          <label>Group Name <input class="group-name"/></label><br/>
+          <div class="conversations"></div>
+          <button type="button" class="add-conv">Add Conversation</button>
+        \`;
+        groupsEl.appendChild(g);
+        g.querySelector('.add-conv').onclick = () => addConversation(g);
+      }
+
+      function addConversation(groupDiv) {
+        const c = document.createElement('div');
+        c.className = 'conversation';
+        c.innerHTML = \`
+          <h4>Conversation</h4>
+          <label>Conversation ID <input class="conversation-id"/></label><br/>
+          <div class="messages"></div>
+          <button type="button" class="add-msg">Add Message</button>
+        \`;
+        groupDiv.querySelector('.conversations').appendChild(c);
+        c.querySelector('.add-msg').onclick = () => addMessage(c);
+      }
+
+      function addMessage(convDiv) {
+        const m = document.createElement('div');
+        m.className = 'message';
+        m.innerHTML = \`
+          <label>Sender ID <input class="sender-id"/></label>
+          <label>Content <input class="message-content"/></label>
+          <label>Send At <input class="send-at" placeholder="2025-06-05T13:00:00Z"/></label>
+          <label>Reply To <input class="reply-to"/></label><br/>
+        \`;
+        convDiv.querySelector('.messages').appendChild(m);
+      }
+
+      // Start with one group for convenience
+      addGroup();
+
+      document.querySelector('form').onsubmit = () => {
+        const payload = {
+          system_metadata: {
+            version: document.getElementById('sys-version').value,
+            generated_at: document.getElementById('sys-generated-at').value,
+            timezone: document.getElementById('sys-timezone').value,
+            description: document.getElementById('sys-description').value
+          },
+          groups: []
+        };
+
+        document.querySelectorAll('.group').forEach(g => {
+          const group = {
+            group_id: g.querySelector('.group-id').value,
+            group_name: g.querySelector('.group-name').value,
+            conversations: []
+          };
+          g.querySelectorAll('.conversation').forEach(c => {
+            const conv = {
+              conversation_id: c.querySelector('.conversation-id').value,
+              messages: []
+            };
+            c.querySelectorAll('.message').forEach(m => {
+              conv.messages.push({
+                sender_id: m.querySelector('.sender-id').value,
+                message_content: m.querySelector('.message-content').value,
+                send_at: m.querySelector('.send-at').value,
+                reply_to: m.querySelector('.reply-to').value
+              });
+            });
+            group.conversations.push(conv);
+          });
+          payload.groups.push(group);
+        });
+
+        const json = JSON.stringify(payload);
+        document.getElementById('payload').value = json;
+        document.getElementById('preview').textContent = JSON.stringify(payload, null, 2);
+      };
+    </script>
   </body>
   </html>`
   return c.html(html)
