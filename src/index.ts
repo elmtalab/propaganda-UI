@@ -44,12 +44,37 @@ interface AdvancedMessageTask {
   send_at: number
 }
 
+interface LoggedMessage {
+  group_id: string
+  conversation_id?: string
+  sender_id: string
+  message_content: string
+  timestamp: number
+  scheduled_for?: number
+}
 
 // Endpoint that ultimately receives the scheduled messages
 const API_URL = 'https://propaganda-production.up.railway.app/api/send/'
 
 // Create a minimal Hono application to handle HTTP routes
 const app = new Hono<{ Bindings: Env }>()
+const logMessages = async (groups: any[], scheduled: number, env: Env) => {
+  for (const g of groups) {
+    for (const conv of g.conversations || []) {
+      for (const msg of conv.messages || []) {
+        const entry: LoggedMessage = {
+          group_id: g.group_id,
+          conversation_id: conv.conversation_id,
+          sender_id: msg.sender_id,
+          message_content: msg.message_content,
+          timestamp: Date.now(),
+          scheduled_for: scheduled
+        };
+        await env.MESSAGE_KV.put(`message:${g.group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
+      }
+    }
+  }
+};
 
 // Template JSON shown in the advanced form for convenience
 const DEFAULT_JSON = `{
@@ -274,6 +299,63 @@ const WIZARD_HTML = `<!DOCTYPE html>
 </body>
 </html>`
 
+const CHAT_HTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Chat Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .chat-window { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; }
+    .message { margin: 5px 0; }
+    .ai { background: #e9f5ff; padding: 5px 10px; border-radius: 4px; display: inline-block; }
+    .user { background: #dcf8c6; padding: 5px 10px; border-radius: 4px; display: inline-block; float: right; }
+  </style>
+</head>
+<body>
+  <h1>Telegram Chat Demo</h1>
+  <label>Group ID <input id="group-id" /></label><br/>
+  <label>Number of AI <input type="number" id="ai-count" value="1" min="1" /></label>
+  <div id="ai-container"></div>
+  <div class="chat-window" id="chat"></div>
+  <input id="user-msg" placeholder="Your message"/> <button id="send">Send</button>
+  <script>
+    function updateAI() {
+      const count = parseInt(document.getElementById('ai-count').value);
+      const container = document.getElementById('ai-container');
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const div = document.createElement('div');
+        div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
+        container.appendChild(div);
+      }
+    }
+    function addMessage(text, cls) {
+      const el = document.createElement('div');
+      el.className = 'message ' + cls;
+      el.textContent = text;
+      document.getElementById('chat').appendChild(el);
+      document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+    }
+    document.getElementById('ai-count').onchange = updateAI;
+    updateAI();
+    document.getElementById('ai-container').addEventListener('click', e => {
+      if (e.target.classList.contains('add-ai-msg')) {
+        const input = e.target.previousElementSibling;
+        addMessage(input.value, 'ai');
+        fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'ai_' + input.dataset.index, message_content: input.value }) });
+        input.value = '';
+      }
+    });
+    document.getElementById('send').onclick = () => {
+      const msg = document.getElementById('user-msg').value;
+      addMessage(msg, 'user');
+      fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg }) });
+      document.getElementById('user-msg').value = '';
+    };
+  </script>
+</body>
+</html>`
 app.get('/', c => {
   // Simple form UI to schedule a message
 
@@ -296,6 +378,9 @@ app.get('/', c => {
 // Multi-step wizard that posts JSON to /advanced
 app.get('/wizard', c => {
   return c.html(WIZARD_HTML)
+})
+app.get('/chat', c => {
+  return c.html(CHAT_HTML)
 })
 
 app.post('/schedule', async c => {
@@ -499,6 +584,27 @@ app.post('/advanced', async c => {
   return c.json({ status: 'scheduled', ids })
 })
 
+app.post('/log', async c => {
+  const body = await c.req.parseBody();
+  const group_id = body['group_id']?.toString() || '';
+  const sender_id = body['sender_id']?.toString() || '';
+  const content = body['message_content']?.toString() || '';
+  if (!group_id || !sender_id || !content) return c.json({ error: 'Invalid input' }, 400);
+  const entry: LoggedMessage = { group_id, sender_id, message_content: content, timestamp: Date.now() };
+  await c.env.MESSAGE_KV.put(`message:${group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
+  return c.json({ status: 'logged' });
+})
+
+app.get('/history/:group', async c => {
+  const group = c.req.param('group');
+  const list = await c.env.MESSAGE_KV.list({ prefix: `message:${group}:` });
+  const messages = [] as any[];
+  for (const k of list.keys) {
+    const m = await c.env.MESSAGE_KV.get(k.name, { type: 'json' });
+    if (m) messages.push(m);
+  }
+  return c.json({ group, messages });
+})
 // Export the app to let Wrangler handle requests
 export default app
 
@@ -512,19 +618,20 @@ export const scheduled = async (event: ScheduledController, env: Env, ctx: Execu
     const data = await env.SCHEDULE_KV.get(key.name, { type: 'json' }) as any
     if (!data) continue
 
-    const send = async (groups: any) => {
+    const send = async (groups: any, scheduledFor: number) => {
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ groups })
       })
+      await logMessages(groups, scheduledFor, env)
       await env.SCHEDULE_KV.delete(key.name)
     }
 
     if ('groups' in data) {
       const task = data as SchedulePayload
       if (task.send_at <= now) {
-        await send(task.groups)
+        await send(task.groups, task.send_at)
       }
     } else if ('group_id' in data && 'message' in data) {
       const task = data as AdvancedMessageTask
@@ -538,7 +645,7 @@ export const scheduled = async (event: ScheduledController, env: Env, ctx: Execu
               }
             ]
           }
-        ])
+        ], task.send_at)
       }
     }
   }
