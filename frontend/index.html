@@ -38,6 +38,7 @@
           audit_log: { event_id: '', event_type: '', actor_id: '', target_id: '', timestamp: '' }
         });
 
+
       const handleChange = (path) => (e) => {
         const keys = path.split('.');
         setData(prev => {
@@ -112,6 +113,7 @@
           </Box>
         );
 
+
       const renderSummary = () => (
         <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 16 }}>
 {JSON.stringify(data, null, 2)}
@@ -129,6 +131,7 @@
             default: return renderSummary();
           }
         };
+
 
       const submit = () => {
         console.log('submit', data);
