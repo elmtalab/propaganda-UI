@@ -45,5 +45,6 @@ Navigate to `/chat` for a Telegram-style interface powered by **react-chat-eleme
 
 You can also open `/chat/<groupId>` to jump straight into a specific group. This page pre-fills the group ID from the URL and lets you send messages in a Telegram-like view. The worker serves this path directly, so visiting `/chat/mygroup` uses the segment after `/chat/` as the group ID.
 
+
 Visit `/chatpage` for a multi-group view rendered with **ChatList** from **react-chat-elements**. The page lists a few sample chats similar to Telegram.
 
