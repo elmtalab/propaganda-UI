@@ -2,6 +2,11 @@
 
 This project includes a Cloudflare Worker that schedules messages to be sent to the `propaganda` API at user-specified times.
 
+The repository also provides a simple Material&nbsp;UI React demo in
+`frontend/index.html`. Open that file in a browser to walk through a wizard for
+entering system metadata, group information and AI user details. The final step
+shows the JSON payload that can be posted to a backend of your choice.
+
 ## Usage
 
 1. Install dependencies
