@@ -43,6 +43,8 @@ For a guided setup experience, visit `/wizard`. This multi-step form walks throu
 
 Navigate to `/chat` for a Telegram-style interface powered by **react-chat-elements**. Enter a group ID and sender name, type your message and optionally pick a time. Messages appear in a scrolling chat window and can be scheduled in bulk with **Schedule All** which posts them to `/advanced`.
 
+You can click the reply arrow on any message to quote it in the composer. The selected message appears above the input field and the relation is stored when scheduling.
+
 You can also open `/chat/<groupId>` to jump straight into a specific group. This page pre-fills the group ID from the URL and lets you send messages in a Telegram-like view. The worker serves this path directly, so visiting `/chat/mygroup` uses the segment after `/chat/` as the group ID.
 
 
