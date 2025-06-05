@@ -112,6 +112,7 @@
           </Box>
         );
 
+
       const renderSummary = () => (
         <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 16 }}>
 {JSON.stringify(data, null, 2)}
@@ -129,6 +130,7 @@
             default: return renderSummary();
           }
         };
+
 
       const submit = () => {
         console.log('submit', data);

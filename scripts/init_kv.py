@@ -24,6 +24,7 @@ import requests
 import tomli
 import tomli_w
 
+
 NAMESPACES = [
     "SCHEDULE_KV",
     "SYSTEM_META_KV",
@@ -47,6 +48,7 @@ WRANGLER_TOML = Path(__file__).resolve().parents[1] / "wrangler.toml"
 
 
 def create_namespace(account_id: str, token: str, name: str) -> str:
+
     url = f"{API_BASE}/accounts/{account_id}/storage/kv/namespaces"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -80,6 +82,7 @@ def main() -> None:
     ]
     WRANGLER_TOML.write_text(tomli_w.dumps(cfg), "utf-8")
     print("\n✅ Updated", WRANGLER_TOML)
+
 
 
 if __name__ == "__main__":

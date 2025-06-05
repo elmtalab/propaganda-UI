@@ -25,6 +25,7 @@ shows the JSON payload that can be posted to a backend of your choice.
    returned namespace IDs.
    ```bash
    python scripts/init_kv.py
+
    ```
 
 4. Deploy with Wrangler
