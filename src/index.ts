@@ -57,7 +57,7 @@ const DEFAULT_JSON = `{
     "version": "1.0.1",
     "generated_at": "2025-06-05T01:45:00Z",
     "timezone": "UTC",
-    "description": "Ledger of AI-only outbound interactions inside Telegram groups"
+    "description": "Sample with two groups, two conversations and three AI users"
   },
   "groups": [
     {
@@ -70,18 +70,49 @@ const DEFAULT_JSON = `{
       "members": [],
       "conversations": [
         {
+          "conversation_id": "conv1",
           "messages": [
             {
-              "sender_id": "123456789",
-              "message_content": "Hello world",
+              "sender_id": "987654321",
+              "message_content": "Welcome to Crypto Talk!",
               "send_at": "2025-06-05T13:00:00Z"
+            },
+            {
+              "sender_id": "876543210",
+              "message_content": "Glad to be here.",
+              "send_at": "2025-06-05T13:05:00Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group_id": "-1001234567890",
+      "group_name": "Altcoin Updates",
+      "privacy_level": "public",
+      "created_at": "2024-12-02T12:00:00Z",
+      "created_by": 987654321,
+      "group_description": "News about altcoins.",
+      "members": [],
+      "conversations": [
+        {
+          "conversation_id": "conv2",
+          "messages": [
+            {
+              "sender_id": "765432109",
+              "message_content": "Daily altcoin update",
+              "send_at": "2025-06-06T09:00:00Z"
             }
           ]
         }
       ]
     }
   ],
-  "ai_users": [],
+  "ai_users": [
+    { "user_id": "987654321", "user_name": "CryptoBot", "role": "assistant", "status": "active" },
+    { "user_id": "876543210", "user_name": "MarketBot", "role": "assistant", "status": "active" },
+    { "user_id": "765432109", "user_name": "NewsBot", "role": "assistant", "status": "active" }
+  ],
   "audit_log": []
 }`
 
@@ -168,7 +199,9 @@ app.get('/advanced', c => {
     <pre id="preview"></pre>
 
     <script>
+      const DEFAULT_JSON = ${JSON.stringify(DEFAULT_JSON)};
       const groupsEl = document.getElementById('groups');
+      document.getElementById('preview').textContent = DEFAULT_JSON;
       document.getElementById('addGroup').onclick = () => addGroup();
 
       function addGroup() {
