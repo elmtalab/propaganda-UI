@@ -1,0 +1,163 @@
+import { Hono } from 'hono'
+import type { Env } from '../types'
+
+const HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup Wizard</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>body { margin: 0; padding: 20px; font-family: Roboto, sans-serif; }</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { Stepper, Step, StepLabel, Button, TextField, Container, Box, CssBaseline } = MaterialUI;
+    const useMediaQuery = MaterialUI.useMediaQuery;
+
+    function App() {
+      const steps = ['System Metadata', 'Group Info', 'Conversation', 'Message', 'AI User', 'Audit Log', 'Summary'];
+      const [activeStep, setActiveStep] = React.useState(0);
+      const [data, setData] = React.useState({
+        system_metadata: { version: '', generated_at: '', timezone: '', description: '' },
+        group: { group_id: '', group_name: '', privacy_level: '', created_at: '', created_by: '', group_description: '' },
+        conversation: { conversation_id: '', start_time: '', initiated_by: '', topic: '' },
+        message: { message_id: '', sender_id: '', message_content: '', timestamp: '' },
+        ai_user: { user_id: '', user_name: '', role: '', status: '', max_messages_per_hour: '' },
+        audit_log: { event_id: '', event_type: '', actor_id: '', target_id: '', timestamp: '' }
+      });
+      const isMobile = useMediaQuery('(max-width:600px)');
+
+      const handleChange = (path) => (e) => {
+        const keys = path.split('.');
+        setData(prev => {
+          const updated = { ...prev };
+          let obj = updated;
+          for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]];
+          obj[keys[keys.length - 1]] = e.target.value;
+          return updated;
+        });
+      };
+
+      const handleNext = () => setActiveStep(s => s + 1);
+      const handleBack = () => setActiveStep(s => s - 1);
+
+      const renderSystem = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
+          <TextField fullWidth label="Version" value={data.system_metadata.version} onChange={handleChange('system_metadata.version')} />
+          <TextField fullWidth label="Generated At" placeholder="2025-06-05T01:45:00Z" value={data.system_metadata.generated_at} onChange={handleChange('system_metadata.generated_at')} />
+          <TextField fullWidth label="Timezone" value={data.system_metadata.timezone} onChange={handleChange('system_metadata.timezone')} />
+          <TextField fullWidth label="Description" value={data.system_metadata.description} onChange={handleChange('system_metadata.description')} />
+        </Box>
+      );
+
+      const renderGroup = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
+          <TextField fullWidth label="Group ID" value={data.group.group_id} onChange={handleChange('group.group_id')} />
+          <TextField fullWidth label="Group Name" value={data.group.group_name} onChange={handleChange('group.group_name')} />
+          <TextField fullWidth label="Privacy Level" value={data.group.privacy_level} onChange={handleChange('group.privacy_level')} />
+          <TextField fullWidth label="Created At" placeholder="2024-12-01T18:09:55Z" value={data.group.created_at} onChange={handleChange('group.created_at')} />
+          <TextField fullWidth label="Created By" value={data.group.created_by} onChange={handleChange('group.created_by')} />
+          <TextField fullWidth label="Group Description" value={data.group.group_description} onChange={handleChange('group.group_description')} />
+        </Box>
+      );
+
+      const renderConversation = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
+          <TextField fullWidth label="Conversation ID" value={data.conversation.conversation_id} onChange={handleChange('conversation.conversation_id')} />
+          <TextField fullWidth label="Start Time" placeholder="2025-06-04T22:17:12Z" value={data.conversation.start_time} onChange={handleChange('conversation.start_time')} />
+          <TextField fullWidth label="Initiated By" value={data.conversation.initiated_by} onChange={handleChange('conversation.initiated_by')} />
+          <TextField fullWidth label="Topic" value={data.conversation.topic} onChange={handleChange('conversation.topic')} />
+        </Box>
+      );
+
+      const renderMessage = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
+          <TextField fullWidth label="Message ID" value={data.message.message_id} onChange={handleChange('message.message_id')} />
+          <TextField fullWidth label="Sender ID" value={data.message.sender_id} onChange={handleChange('message.sender_id')} />
+          <TextField fullWidth label="Content" value={data.message.message_content} onChange={handleChange('message.message_content')} />
+          <TextField fullWidth label="Timestamp" placeholder="2025-06-04T22:20:00Z" value={data.message.timestamp} onChange={handleChange('message.timestamp')} />
+        </Box>
+      );
+
+      const renderAIUser = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
+          <TextField fullWidth label="User ID" value={data.ai_user.user_id} onChange={handleChange('ai_user.user_id')} />
+          <TextField fullWidth label="User Name" value={data.ai_user.user_name} onChange={handleChange('ai_user.user_name')} />
+          <TextField fullWidth label="Role" value={data.ai_user.role} onChange={handleChange('ai_user.role')} />
+          <TextField fullWidth label="Status" value={data.ai_user.status} onChange={handleChange('ai_user.status')} />
+          <TextField fullWidth label="Max Msgs/Hour" value={data.ai_user.max_messages_per_hour} onChange={handleChange('ai_user.max_messages_per_hour')} />
+        </Box>
+      );
+
+      const renderAudit = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
+          <TextField fullWidth label="Event ID" value={data.audit_log.event_id} onChange={handleChange('audit_log.event_id')} />
+          <TextField fullWidth label="Event Type" value={data.audit_log.event_type} onChange={handleChange('audit_log.event_type')} />
+          <TextField fullWidth label="Actor ID" value={data.audit_log.actor_id} onChange={handleChange('audit_log.actor_id')} />
+          <TextField fullWidth label="Target ID" value={data.audit_log.target_id} onChange={handleChange('audit_log.target_id')} />
+          <TextField fullWidth label="Timestamp" placeholder="2025-06-04T22:16:54Z" value={data.audit_log.timestamp} onChange={handleChange('audit_log.timestamp')} />
+        </Box>
+      );
+
+      const renderSummary = () => (
+        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 16 }}>
+{JSON.stringify(data, null, 2)}
+        </pre>
+      );
+
+      const renderStepContent = (step) => {
+        switch (step) {
+          case 0: return renderSystem();
+          case 1: return renderGroup();
+          case 2: return renderConversation();
+          case 3: return renderMessage();
+          case 4: return renderAIUser();
+          case 5: return renderAudit();
+          default: return renderSummary();
+        }
+      };
+
+      const submit = async () => {
+        const resp = await fetch('/advanced', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ payload: JSON.stringify(data) })
+        });
+        const result = await resp.json();
+        alert('Server response: ' + JSON.stringify(result));
+      };
+
+      return (
+        <Container maxWidth="sm">
+          <CssBaseline />
+          <Stepper activeStep={activeStep} orientation={isMobile ? 'vertical' : 'horizontal'} sx={{ mt: 2 }}>
+           {steps.map((label, idx) => (
+              <Step key={label} sx={{ display: idx === activeStep ? 'flex' : 'none' }}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+          {renderStepContent(activeStep)}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 4 }}>
+            {activeStep > 0 && <Button onClick={handleBack}>Back</Button>}
+            {activeStep < steps.length - 1 && <Button variant="contained" onClick={handleNext}>Next</Button>}
+            {activeStep === steps.length - 1 && <Button variant="contained" onClick={submit}>Send</Button>}
+          </Box>
+        </Container>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>`
+
+export default function register(app: Hono<{ Bindings: Env }>) {
+  app.get('/wizard', c => c.html(HTML))
+}
