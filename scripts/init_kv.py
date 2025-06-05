@@ -33,7 +33,7 @@ NAMESPACES = [
     "CONVERSATION_KV",
     "MESSAGE_KV",
     "AI_USER_KV",
-    "AUDIT_LOG_KV",
+    "AUDIT_LOG_KV", 
 ]
 
 PREFIX = "PROP_"
