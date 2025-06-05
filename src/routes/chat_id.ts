@@ -7,90 +7,75 @@ function page(id: string) {
 <head>
   <meta charset="UTF-8" />
   <title>Chat ${id}</title>
-  <link rel="stylesheet" href="https://unpkg.com/react-chat-elements/dist/main.css" />
   <script type="module">
     import React from 'https://esm.sh/react@18.2.0'
     import ReactDOM from 'https://esm.sh/react-dom@18.2.0'
-    import { MessageList, Input } from 'https://esm.sh/react-chat-elements@12.0.18'
     window.React = React
     window.ReactDOM = ReactDOM
-    window.ReactChatElements = { MessageList, Input }
   </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .chat-window { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; }
-    .reply-preview { background: #f0f0f0; padding: 4px; margin-top: 4px; font-size: 0.9em; }
+    body { font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
+    .messages { flex-grow: 1; overflow-y: auto; padding: 10px; }
+    .message { display: flex; margin-bottom: 8px; }
+    .bubble { padding: 6px 8px; border-radius: 4px; }
+    .composer { display: flex; align-items: center; padding: 10px; border-top: 1px solid #ccc; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .avatar-list { position: absolute; bottom: 50px; background: #fff; border: 1px solid #ccc; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .avatar-option { display: flex; align-items: center; padding: 5px 10px; cursor: pointer; }
+    .avatar-option:hover { background: #f0f0f0; }
+    .avatar-option span { margin-left: 6px; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root" style="flex-grow:1"></div>
   <script type="text/babel">
-    const GROUP_ID = "${id}"
-    const { MessageList, Input } = window.ReactChatElements
-
     function App() {
-      const [sender, setSender] = React.useState('user')
-      const [text, setText] = React.useState('')
-      const [time, setTime] = React.useState('')
-      const [messages, setMessages] = React.useState([])
-      const [replyTo, setReplyTo] = React.useState(null)
-
-      const addMessage = () => {
-        const ts = time ? new Date(time).toISOString() : new Date().toISOString()
-        const m = { sender_id: sender, message_content: text, send_at: ts, reply_to: replyTo }
-        setMessages(prev => [...prev, m])
-        setText('')
-        setTime('')
-        setReplyTo(null)
-        const params = new URLSearchParams({ group_id: GROUP_ID, sender_id: sender, message_content: m.message_content, send_at: ts })
-        if (replyTo !== null) params.append('reply_to', replyTo.toString())
-        fetch('/log', { method: 'POST', body: params })
-      }
-
-      const scheduleAll = () => {
-        const payload = { groups: [ { group_id: GROUP_ID, conversations: [ { messages } ] } ] }
-        fetch('/advanced', { method: 'POST', body: new URLSearchParams({ payload: JSON.stringify(payload) }) })
-          .then(r => r.json())
-          .then(r => alert('Scheduled ' + (r.ids ? r.ids.length : 0) + ' messages'))
-      }
-
-      const dataSource = messages.map((m, idx) => {
-        const item: any = { position: m.sender_id === 'user' ? 'right' : 'left', type: 'text', text: m.message_content, date: new Date(m.send_at), replyButton: true }
-        if (typeof m.reply_to === 'number' && messages[m.reply_to]) {
-          item.reply = { title: messages[m.reply_to].sender_id, message: messages[m.reply_to].message_content }
-        }
-        return item
-      })
-
+      const avatars = [
+        { name: 'Alice', color: '#f44336' },
+        { name: 'Bob', color: '#2196F3' },
+        { name: 'Carol', color: '#4caf50' }
+      ];
+      const [showList, setShowList] = React.useState(false);
+      const [selected, setSelected] = React.useState(avatars[0]);
+      const [text, setText] = React.useState('');
+      const [messages, setMessages] = React.useState([]);
+      const send = () => {
+        if (!text) return;
+        setMessages(prev => [...prev, { ...selected, text }]);
+        setText('');
+      };
       return (
-        <div>
-          <h1>Group {GROUP_ID}</h1>
-          <div className="chat-window">
-            <MessageList
-              className="message-list"
-              lockable={true}
-              toBottomHeight={'100%'}
-              dataSource={dataSource}
-              onReplyMessageClick={(_, index) => setReplyTo(index)}
-            />
+        <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+          <div className="messages">
+            {messages.map((m,i) => (
+              <div key={i} className="message">
+                <div className="avatar" style={{background:m.color, marginRight:8}}>{m.name[0]}</div>
+                <div className="bubble" style={{background:m.color + '22'}}>{m.text}</div>
+              </div>
+            ))}
           </div>
-          {replyTo !== null && (
-            <div className="reply-preview">
-              Replying to {messages[replyTo]?.sender_id}: "{messages[replyTo]?.message_content}"
-              <button onClick={() => setReplyTo(null)}>Cancel</button>
+          <div className="composer">
+            <div style={{position:'relative', marginRight:8}}>
+              <div className="avatar" style={{background:selected.color}} onClick={() => setShowList(!showList)}>{selected.name[0]}</div>
+              {showList && (
+                <div className="avatar-list">
+                  {avatars.map(av => (
+                    <div key={av.name} className="avatar-option" onClick={() => {setSelected(av); setShowList(false);}}>
+                      <div className="avatar" style={{background:av.color, width:30, height:30}}>{av.name[0]}</div>
+                      <span>{av.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-          <Input placeholder="Message" multiline={true} value={text} onChange={e => setText(e.target.value)} rightButtons={null} />
-          <input type="datetime-local" value={time} onChange={e => setTime(e.target.value)} />
-          <input placeholder="Sender" value={sender} onChange={e => setSender(e.target.value)} />
-          <button onClick={addMessage}>Add</button>
-          <button onClick={scheduleAll}>Schedule All</button>
+            <input type="text" value={text} onChange={e => setText(e.target.value)} style={{flexGrow:1, padding:'6px'}} placeholder="Type message..." />
+            <button onClick={send} style={{marginLeft:8}}>Send</button>
+          </div>
         </div>
-      )
+      );
     }
-
-    ReactDOM.render(<App />, document.getElementById('root'))
+    ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
 </html>`
