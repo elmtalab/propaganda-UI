@@ -318,7 +318,10 @@ const CHAT_HTML = `<!DOCTYPE html>
   <label>Number of AI <input type="number" id="ai-count" value="1" min="1" /></label>
   <div id="ai-container"></div>
   <div class="chat-window" id="chat"></div>
-  <input id="user-msg" placeholder="Your message"/> <button id="send">Send</button>
+  <input id="user-msg" placeholder="Your message"/>
+  <input id="user-time" type="datetime-local"/>
+  <button id="send">Add</button>
+  <button id="schedule-all">Schedule All</button>
   <script>
     function updateAI() {
       const count = parseInt(document.getElementById('ai-count').value);
@@ -326,32 +329,53 @@ const CHAT_HTML = `<!DOCTYPE html>
       container.innerHTML = '';
       for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
-        div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
+        div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"> at <input type="datetime-local" class="ai-time" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
         container.appendChild(div);
       }
     }
-    function addMessage(text, cls) {
+    const messages = [];
+    function addMessage(text, cls, sender, time) {
       const el = document.createElement('div');
       el.className = 'message ' + cls;
-      el.textContent = text;
+      el.textContent = '[' + (new Date(time)).toLocaleString() + '] ' + sender + ': ' + text;
       document.getElementById('chat').appendChild(el);
       document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+      messages.push({ sender_id: sender, message_content: text, send_at: time });
     }
     document.getElementById('ai-count').onchange = updateAI;
     updateAI();
     document.getElementById('ai-container').addEventListener('click', e => {
       if (e.target.classList.contains('add-ai-msg')) {
-        const input = e.target.previousElementSibling;
-        addMessage(input.value, 'ai');
-        fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'ai_' + input.dataset.index, message_content: input.value }) });
+        const input = e.target.parentElement.querySelector('.ai-msg');
+        const timeEl = e.target.parentElement.querySelector('.ai-time');
+        const time = timeEl.value ? new Date(timeEl.value).toISOString() : new Date().toISOString();
+        addMessage(input.value, 'ai', 'ai_' + input.dataset.index, time);
+        fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'ai_' + input.dataset.index, message_content: input.value, send_at: time }) });
         input.value = '';
+        timeEl.value = '';
       }
     });
     document.getElementById('send').onclick = () => {
       const msg = document.getElementById('user-msg').value;
-      addMessage(msg, 'user');
-      fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg }) });
+      const time = document.getElementById('user-time').value ? new Date(document.getElementById('user-time').value).toISOString() : new Date().toISOString();
+      addMessage(msg, 'user', 'user', time);
+      fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg, send_at: time }) });
       document.getElementById('user-msg').value = '';
+      document.getElementById('user-time').value = '';
+    };
+    document.getElementById('schedule-all').onclick = () => {
+      const groupId = document.getElementById('group-id').value;
+      const payload = {
+        groups: [
+          {
+            group_id: groupId,
+            conversations: [ { messages } ]
+          }
+        ]
+      };
+      fetch('/advanced', { method: 'POST', body: new URLSearchParams({ payload: JSON.stringify(payload) }) })
+        .then(r => r.json())
+        .then(r => alert('Scheduled ' + (r.ids ? r.ids.length : 0) + ' messages'));
     };
   </script>
 </body>
@@ -589,8 +613,10 @@ app.post('/log', async c => {
   const group_id = body['group_id']?.toString() || '';
   const sender_id = body['sender_id']?.toString() || '';
   const content = body['message_content']?.toString() || '';
+  const send_at = Date.parse(body['send_at']?.toString() || '');
   if (!group_id || !sender_id || !content) return c.json({ error: 'Invalid input' }, 400);
   const entry: LoggedMessage = { group_id, sender_id, message_content: content, timestamp: Date.now() };
+  if (!isNaN(send_at)) entry.scheduled_for = send_at;
   await c.env.MESSAGE_KV.put(`message:${group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
   return c.json({ status: 'logged' });
 })
