@@ -1,0 +1,26 @@
+# Name of the deployed worker
+name = "propaganda-worker"
+
+# Entry point for the worker
+main = "src/index.ts"
+
+# Cloudflare Workers runtime version
+compatibility_date = "2024-05-14"
+
+# List of KV namespaces the worker can access
+kv_namespaces = [
+  # Stores scheduled tasks waiting to be sent
+  { binding = "SCHEDULE_KV", id = "SCHEDULE_KV" },
+  # Additional namespaces from the design document
+  { binding = "SYSTEM_META_KV", id = "SYSTEM_META_KV" },
+  { binding = "GROUP_KV", id = "GROUP_KV" },
+  { binding = "GROUP_MEMBERS_KV", id = "GROUP_MEMBERS_KV" },
+  { binding = "CONVERSATION_KV", id = "CONVERSATION_KV" },
+  { binding = "MESSAGE_KV", id = "MESSAGE_KV" },
+  { binding = "AI_USER_KV", id = "AI_USER_KV" },
+  { binding = "AUDIT_LOG_KV", id = "AUDIT_LOG_KV" }
+]
+
+[triggers]
+# Run the `scheduled` handler once every minute
+crons = ["*/1 * * * *"]
