@@ -18,6 +18,7 @@ const HTML = `<!DOCTYPE html>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
+
   </style>
 </head>
 <body>
@@ -38,6 +39,7 @@ const HTML = `<!DOCTYPE html>
       ];
 
       return <ChatList className="chat-list" dataSource={chats} />;
+
     }
 
     ReactDOM.render(<App />, document.getElementById('root'));
