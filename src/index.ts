@@ -51,6 +51,8 @@ interface LoggedMessage {
   message_content: string
   timestamp: number
   scheduled_for?: number
+reply_to?: string
+
 }
 
 // Endpoint that ultimately receives the scheduled messages
@@ -68,7 +70,9 @@ const logMessages = async (groups: any[], scheduled: number, env: Env) => {
           sender_id: msg.sender_id,
           message_content: msg.message_content,
           timestamp: Date.now(),
-          scheduled_for: scheduled
+        scheduled_for: scheduled,
+          reply_to: msg.reply_to
+
         };
         await env.MESSAGE_KV.put(`message:${g.group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
       }
@@ -318,7 +322,11 @@ const CHAT_HTML = `<!DOCTYPE html>
   <label>Number of AI <input type="number" id="ai-count" value="1" min="1" /></label>
   <div id="ai-container"></div>
   <div class="chat-window" id="chat"></div>
- <input id="user-msg" placeholder="Your message"/>
+ <div id="reply-indicator" style="display:none;margin:5px 0;">
+    Replying...
+    <button id="cancel-reply" type="button">Cancel</button>
+  </div>
+  <input id="user-msg" placeholder="Your message"/>
   <input id="user-time" type="datetime-local"/>
   <button id="send">Add</button>
   <button id="schedule-all">Schedule All</button>
@@ -331,48 +339,83 @@ const CHAT_HTML = `<!DOCTYPE html>
       for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
      div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"> at <input type="datetime-local" class="ai-time" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
+
         container.appendChild(div);
       }
     }
     const messages = [];
-    function addMessage(text, cls, sender, time) {
+   let currentReplyTo = null;
+    const replyIndicator = document.getElementById('reply-indicator');
+    document.getElementById('cancel-reply').onclick = () => {
+      currentReplyTo = null;
+      replyIndicator.style.display = 'none';
+    };
+    function addMessage(text, cls, sender, time, replyTo) {
+      const id = messages.length;
       const el = document.createElement('div');
       el.className = 'message ' + cls;
-      el.textContent = '[' + (new Date(time)).toLocaleString() + '] ' + sender + ': ' + text;
+      el.dataset.id = id;
+      let inner = '[' + (new Date(time)).toLocaleString() + '] ' + sender + ': ' + text;
+      if (replyTo !== null) inner += ' \u21a9 #' + replyTo; // ↩ symbol
+      inner += ' <button class="reply-button" data-id="' + id + '">Reply</button>';
+      el.innerHTML = inner;
       document.getElementById('chat').appendChild(el);
       document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
-      messages.push({ sender_id: sender, message_content: text, send_at: time });
-
+      messages.push({ id, sender_id: sender, message_content: text, send_at: time, reply_to: replyTo });
     }
     document.getElementById('ai-count').onchange = updateAI;
     updateAI();
+    document.getElementById('chat').addEventListener('click', e => {
+      if (e.target.classList.contains('reply-button')) {
+        currentReplyTo = e.target.dataset.id;
+        replyIndicator.style.display = 'block';
+        replyIndicator.textContent = 'Replying to #' + currentReplyTo;
+      }
+    });
     document.getElementById('ai-container').addEventListener('click', e => {
       if (e.target.classList.contains('add-ai-msg')) {
-       const input = e.target.parentElement.querySelector('.ai-msg');
+        const input = e.target.parentElement.querySelector('.ai-msg');
         const timeEl = e.target.parentElement.querySelector('.ai-time');
         const time = timeEl.value ? new Date(timeEl.value).toISOString() : new Date().toISOString();
-        addMessage(input.value, 'ai', 'ai_' + input.dataset.index, time);
-        fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'ai_' + input.dataset.index, message_content: input.value, send_at: time }) });
+        addMessage(input.value, 'ai', 'ai_' + input.dataset.index, time, currentReplyTo);
+        fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'ai_' + input.dataset.index, message_content: input.value, send_at: time, reply_to: currentReplyTo || '' }) });
+        currentReplyTo = null;
+        replyIndicator.style.display = 'none';
         input.value = '';
         timeEl.value = '';
+
+
+
+
+
 
       }
     });
     document.getElementById('send').onclick = () => {
       const msg = document.getElementById('user-msg').value;
-     const time = document.getElementById('user-time').value ? new Date(document.getElementById('user-time').value).toISOString() : new Date().toISOString();
-      addMessage(msg, 'user', 'user', time);
-      fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg, send_at: time }) });
+    const time = document.getElementById('user-time').value ? new Date(document.getElementById('user-time').value).toISOString() : new Date().toISOString();
+      addMessage(msg, 'user', 'user', time, currentReplyTo);
+      fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg, send_at: time, reply_to: currentReplyTo || '' }) });
+      currentReplyTo = null;
+      replyIndicator.style.display = 'none';
+
       document.getElementById('user-msg').value = '';
       document.getElementById('user-time').value = '';
     };
     document.getElementById('schedule-all').onclick = () => {
       const groupId = document.getElementById('group-id').value;
+    const cleaned = messages.map(m => {
+        const o = { sender_id: m.sender_id, message_content: m.message_content, send_at: m.send_at };
+        if (m.reply_to !== null && m.reply_to !== undefined && m.reply_to !== '') o.reply_to = m.reply_to;
+        return o;
+      });
+
       const payload = {
         groups: [
           {
             group_id: groupId,
-            conversations: [ { messages } ]
+          conversations: [ { messages: cleaned } ]
+
           }
         ]
       };
@@ -617,10 +660,12 @@ app.post('/log', async c => {
   const group_id = body['group_id']?.toString() || '';
   const sender_id = body['sender_id']?.toString() || '';
   const content = body['message_content']?.toString() || '';
- const send_at = Date.parse(body['send_at']?.toString() || '');
+  const send_at = Date.parse(body['send_at']?.toString() || '');
+  const reply_to = body['reply_to']?.toString() || '';
   if (!group_id || !sender_id || !content) return c.json({ error: 'Invalid input' }, 400);
   const entry: LoggedMessage = { group_id, sender_id, message_content: content, timestamp: Date.now() };
   if (!isNaN(send_at)) entry.scheduled_for = send_at;
+  if (reply_to) entry.reply_to = reply_to;
 
   await c.env.MESSAGE_KV.put(`message:${group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
   return c.json({ status: 'logged' });

@@ -41,4 +41,5 @@ For a guided setup experience, visit `/wizard`. This multi-step form walks throu
 
 ### Telegram-style Scheduler
 
-Navigate to `/chat` for a lightweight chat interface. Enter a group ID and type messages from multiple AI users or yourself. Each message can be assigned a specific time using `datetime-local` inputs. When you click **Schedule All**, the page sends the collected messages to `/advanced` where they are stored and later dispatched by the cron job.
+avigate to `/chat` for a lightweight chat interface. Enter a group ID and type messages from multiple AI users or yourself. Each message can be assigned a specific time using `datetime-local` inputs. When you click **Schedule All**, the page sends the collected messages to `/advanced` where they are stored and later dispatched by the cron job. Click **Reply** next to any message to mark the next one as a response.
+
