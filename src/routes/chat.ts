@@ -11,7 +11,7 @@ const HTML = `<!DOCTYPE html>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="module">
-    import { MessageList, Input } from 'https://unpkg.com/react-chat-elements@12.0.18/dist/main.js?module'
+    import { MessageList, Input } from 'https://unpkg.com/react-chat-elements@12.0.18/dist/main.es.js'
     window.ReactChatElements = { MessageList, Input }
   </script>
 
