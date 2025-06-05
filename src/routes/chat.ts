@@ -9,8 +9,12 @@ const HTML = `<!DOCTYPE html>
   <link rel="stylesheet" href="https://unpkg.com/react-chat-elements/dist/main.css" />
   <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/react-chat-elements/dist/react-chat-elements.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="module">
+    import { MessageList, Input } from 'https://unpkg.com/react-chat-elements@12.0.18/dist/main.js?module'
+    window.ReactChatElements = { MessageList, Input }
+  </script>
+
   <style>
     body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
     .chat-window { border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; }
