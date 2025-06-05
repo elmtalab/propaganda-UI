@@ -199,7 +199,9 @@ app.get('/advanced', c => {
     <pre id="preview">${DEFAULT_JSON}</pre>
 
     <script>
+      const DEFAULT_JSON = ${JSON.stringify(DEFAULT_JSON)};
       const groupsEl = document.getElementById('groups');
+      document.getElementById('preview').textContent = DEFAULT_JSON;
       document.getElementById('addGroup').onclick = () => addGroup();
 
       function addGroup() {
