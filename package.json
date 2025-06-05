@@ -1,0 +1,19 @@
+{
+  "name": "propaganda-ui",
+  "version": "1.0.0",
+  "description": "\"# propaganda-UI\"",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250605.0",
+    "hono": "^4.7.11",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.19.1"
+  }
+}
