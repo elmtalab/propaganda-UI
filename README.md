@@ -19,11 +19,13 @@ shows the JSON payload that can be posted to a backend of your choice.
    npx tsc
    ```
 
-3. Initialize KV namespaces (requires Cloudflare credentials). This creates
-   Cloudflare KV namespaces prefixed with `PROP_` to match the configuration in
-   `wrangler.toml`.
+3. Initialize KV namespaces. Edit `scripts/init_kv.py` and fill in your
+   `CF_ACCOUNT_ID` and `CF_API_TOKEN`. Running the script will create Cloudflare
+   KV namespaces prefixed with `PROP_` and update `wrangler.toml` with the
+   returned namespace IDs.
    ```bash
-   python scripts/init_kv.py --account-id <ACCOUNT_ID> --api-token <API_TOKEN>
+   python scripts/init_kv.py
+
    ```
 
 4. Deploy with Wrangler
