@@ -51,7 +51,8 @@ interface LoggedMessage {
   message_content: string
   timestamp: number
   scheduled_for?: number
-  reply_to?: string
+reply_to?: string
+
 }
 
 // Endpoint that ultimately receives the scheduled messages
@@ -69,8 +70,9 @@ const logMessages = async (groups: any[], scheduled: number, env: Env) => {
           sender_id: msg.sender_id,
           message_content: msg.message_content,
           timestamp: Date.now(),
-          scheduled_for: scheduled,
+        scheduled_for: scheduled,
           reply_to: msg.reply_to
+
         };
         await env.MESSAGE_KV.put(`message:${g.group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
       }
@@ -320,7 +322,7 @@ const CHAT_HTML = `<!DOCTYPE html>
   <label>Number of AI <input type="number" id="ai-count" value="1" min="1" /></label>
   <div id="ai-container"></div>
   <div class="chat-window" id="chat"></div>
-  <div id="reply-indicator" style="display:none;margin:5px 0;">
+ <div id="reply-indicator" style="display:none;margin:5px 0;">
     Replying...
     <button id="cancel-reply" type="button">Cancel</button>
   </div>
@@ -328,6 +330,7 @@ const CHAT_HTML = `<!DOCTYPE html>
   <input id="user-time" type="datetime-local"/>
   <button id="send">Add</button>
   <button id="schedule-all">Schedule All</button>
+
   <script>
     function updateAI() {
       const count = parseInt(document.getElementById('ai-count').value);
@@ -335,12 +338,13 @@ const CHAT_HTML = `<!DOCTYPE html>
       container.innerHTML = '';
       for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
-        div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"> at <input type="datetime-local" class="ai-time" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
+     div.innerHTML = 'AI ' + (i + 1) + ' says <input class="ai-msg" data-index="' + i + '"> at <input type="datetime-local" class="ai-time" data-index="' + i + '"><button class="add-ai-msg">Add</button>';
+
         container.appendChild(div);
       }
     }
     const messages = [];
-    let currentReplyTo = null;
+   let currentReplyTo = null;
     const replyIndicator = document.getElementById('reply-indicator');
     document.getElementById('cancel-reply').onclick = () => {
       currentReplyTo = null;
@@ -379,36 +383,46 @@ const CHAT_HTML = `<!DOCTYPE html>
         replyIndicator.style.display = 'none';
         input.value = '';
         timeEl.value = '';
+
+
+
+
+
+
       }
     });
     document.getElementById('send').onclick = () => {
       const msg = document.getElementById('user-msg').value;
-      const time = document.getElementById('user-time').value ? new Date(document.getElementById('user-time').value).toISOString() : new Date().toISOString();
+    const time = document.getElementById('user-time').value ? new Date(document.getElementById('user-time').value).toISOString() : new Date().toISOString();
       addMessage(msg, 'user', 'user', time, currentReplyTo);
       fetch('/log', { method: 'POST', body: new URLSearchParams({ group_id: document.getElementById('group-id').value, sender_id: 'user', message_content: msg, send_at: time, reply_to: currentReplyTo || '' }) });
       currentReplyTo = null;
       replyIndicator.style.display = 'none';
+
       document.getElementById('user-msg').value = '';
       document.getElementById('user-time').value = '';
     };
     document.getElementById('schedule-all').onclick = () => {
       const groupId = document.getElementById('group-id').value;
-      const cleaned = messages.map(m => {
+    const cleaned = messages.map(m => {
         const o = { sender_id: m.sender_id, message_content: m.message_content, send_at: m.send_at };
         if (m.reply_to !== null && m.reply_to !== undefined && m.reply_to !== '') o.reply_to = m.reply_to;
         return o;
       });
+
       const payload = {
         groups: [
           {
             group_id: groupId,
-            conversations: [ { messages: cleaned } ]
+          conversations: [ { messages: cleaned } ]
+
           }
         ]
       };
       fetch('/advanced', { method: 'POST', body: new URLSearchParams({ payload: JSON.stringify(payload) }) })
         .then(r => r.json())
         .then(r => alert('Scheduled ' + (r.ids ? r.ids.length : 0) + ' messages'));
+
     };
   </script>
 </body>
@@ -652,6 +666,7 @@ app.post('/log', async c => {
   const entry: LoggedMessage = { group_id, sender_id, message_content: content, timestamp: Date.now() };
   if (!isNaN(send_at)) entry.scheduled_for = send_at;
   if (reply_to) entry.reply_to = reply_to;
+
   await c.env.MESSAGE_KV.put(`message:${group_id}:${Date.now()}:${crypto.randomUUID()}`, JSON.stringify(entry));
   return c.json({ status: 'logged' });
 })
