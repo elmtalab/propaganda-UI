@@ -2,6 +2,11 @@
 
 This project includes a Cloudflare Worker that schedules messages to be sent to the `propaganda` API at user-specified times.
 
+The repository also provides a simple Material&nbsp;UI React demo in
+`frontend/index.html`. Open that file in a browser to walk through a wizard for
+entering system metadata, group information and AI user details. The final step
+shows the JSON payload that can be posted to a backend of your choice.
+
 ## Usage
 
 1. Install dependencies
@@ -14,7 +19,14 @@ This project includes a Cloudflare Worker that schedules messages to be sent to 
    npx tsc
    ```
 
-3. Deploy with Wrangler
+3. Initialize KV namespaces (requires Cloudflare credentials). This creates
+   Cloudflare KV namespaces prefixed with `PROP_` to match the configuration in
+   `wrangler.toml`.
+   ```bash
+   python scripts/init_kv.py --account-id <ACCOUNT_ID> --api-token <API_TOKEN>
+   ```
+
+4. Deploy with Wrangler
    ```bash
    npx wrangler deploy
    ```
