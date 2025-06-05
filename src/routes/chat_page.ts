@@ -1,19 +1,11 @@
 import { Hono } from 'hono'
 import type { Env } from '../types'
 
-function page(id: string) {
-  return `<!DOCTYPE html>
+const HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat ${id}</title>
-  <script type="module">
-    import React from 'https://esm.sh/react@18.2.0'
-    import ReactDOM from 'https://esm.sh/react-dom@18.2.0'
-    window.React = React
-    window.ReactDOM = ReactDOM
-  </script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <title>Chat Page</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
     .messages { flex-grow: 1; overflow-y: auto; padding: 10px; }
@@ -26,6 +18,13 @@ function page(id: string) {
     .avatar-option:hover { background: #f0f0f0; }
     .avatar-option span { margin-left: 6px; }
   </style>
+  <script type="module">
+    import React from 'https://esm.sh/react@18.2.0'
+    import ReactDOM from 'https://esm.sh/react-dom@18.2.0'
+    window.React = React
+    window.ReactDOM = ReactDOM
+  </script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
   <div id="root" style="flex-grow:1"></div>
@@ -79,11 +78,7 @@ function page(id: string) {
   </script>
 </body>
 </html>`
-}
 
 export default function register(app: Hono<{ Bindings: Env }>) {
-  app.get('/chat/:id', c => {
-    const id = c.req.param('id')
-    return c.html(page(id))
-  })
+  app.get('/chat/page', c => c.html(HTML))
 }
